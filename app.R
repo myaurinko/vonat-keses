@@ -72,7 +72,7 @@ kesesstat <- function(x, metric) {
   if (all(is.na(x)) || length(x) == 0) return(NULL) # gyorsabb
   
   x <- x[!is.na(x)]
-
+  
   stats_list <- list()
   value1_list <- list()
   value2_list <- list()
@@ -297,7 +297,7 @@ ui <- navbarPage(
   
   tabPanel(
     "Nyitóoldal",
-    h2("Milyen funkció vannak az oldalnak?"),
+    h2("Milyen funkciói vannak az oldalnak?"),
     # p("A weboldalon a következő funkciók érhetőek el:"),
     tags$ul(
       tags$li("A", actionLink("gotoStat", "Táblázatos statisztikák"), " pontban lekérdezhető az összes adat számszerűen.",
@@ -426,21 +426,17 @@ server <- function(input, output, session) {
           sidebarLayout(
             sidebarPanel(
               selectInput("timeTime", "Időpont kiválasztása",
-                          c("Utolsó nap", "Utolsó hét", "Utolsó hónap",
-                            "Egyéni nap", "Egyéni intervallum"),
+                          c("Utolsó nap", "Utolsó hét",
+                            "Utolsó hónap",
+                            "Egyéni nap vagy intervallum"),
                           "Utolsó hét"),
-              conditionalPanel("input.timeTime == 'Egyéni nap'",
-                               sliderInput("timeTableCustomDate", "Dátum",
-                                           min(ProcData$Datum),
-                                           max(ProcData$Datum),
-                                           max(ProcData$Datum))),
-              conditionalPanel("input.timeTime == 'Egyéni intervallum'",
-                               sliderInput("timeTableCustomInterval",
-                                           "Intervallum",
-                                           min(ProcData$Datum),
-                                           max(ProcData$Datum),
-                                           c(max(ProcData$Datum) - 7,
-                                             max(ProcData$Datum)))),
+              conditionalPanel(
+                "input.timeTime == 'Egyéni nap vagy intervallum'",
+                shinyWidgets::airDatepickerInput(
+                  "timeTableCustomDate", "Dátum vagy intervallum",
+                  c(max(ProcData$Datum) - 7, max(ProcData$Datum)),
+                  range = TRUE, minDate = min(ProcData$Datum),
+                  maxDate = max(ProcData$Datum))),
               radioButtons("timeTableStratTime", "Megjelenítés módja",
                            c("Naponként", "Egyben")),
               radioButtons("statTraintype", "Vonattípus",
@@ -712,9 +708,9 @@ server <- function(input, output, session) {
                  "Utolsó nap" = pd[Datum == max(pd$Datum)],
                  "Utolsó hét" = pd[Datum >= max(pd$Datum) - 7],
                  "Utolsó hónap" = pd[Datum >= max(pd$Datum) - 30],
-                 "Egyéni nap" = pd[Datum == input$timeTableCustomDate],
-                 "Egyéni intervallum" = pd[Datum >= input$timeTableCustomInterval[1] &
-                                             Datum <= input$timeTableCustomInterval[2]])
+                 "Egyéni nap vagy intervallum" = pd[
+                   if(length(input$timeTableCustomDate) == 1) Datum == input$timeTableCustomDate else
+                     Datum >= input$timeTableCustomDate[1] & Datum <= input$timeTableCustomDate[2]])
     daterange <- range(pd$Datum)
     if(input$statTraintype == "Kiválasztott") pd <- pd[VonatJelleg %in% input$statTraintypeSel]
     if(input$statStation == "Kiválasztott") pd <- pd[Erkezo %in% input$statStationSel]
@@ -922,7 +918,7 @@ server <- function(input, output, session) {
     dat <- ProcData[Tipus %in% c("Szakasz", "ZaroSzakasz") & Datum >= input$distrDate[1] &
                       Datum <= input$distrDate[2] & !is.na(KumKeses)]
     if(input$distrLog) dat <- dat[KumKeses > 0]
-
+    
     if(input$distrMode == "Hisztogram") {
       p <- hchart(hist(dat$KumKeses, breaks = 30, plot = FALSE)) |>
         hc_xAxis(title = list(text = "Késési idő [perc]")) |>
