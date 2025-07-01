@@ -43,19 +43,6 @@ options(highcharter.lang = hcoptslang)
 options(highcharter.download_map_data = FALSE)
 # source("hw_grid.R")
 
-pickeropts <- shinyWidgets::pickerOptions(
-  actionsBox = TRUE,
-  liveSearch = TRUE,
-  noneSelectedText = "Válasszon!",
-  noneResultsText = "Nincs találat {0}",
-  countSelectedText = "{0} elem kiválasztva",
-  maxOptionsText ="Legfeljebb {n} elem választható",
-  selectAllText = "Mindegyik",
-  deselectAllText = "Egyik sem",
-  multipleSeparator = ", ",
-  style = "btn btn-outline-dark"
-)
-
 ProcData <- readRDS("Proc2Data.rds")
 allomaskoord <- readRDS("allomaskoord.rds")
 # mapdata <- readRDS("mapdata.rds")
@@ -158,7 +145,6 @@ kesesstat <- function(x, metric) {
       value2_list[["99. percentilis"]] <- NA_real_
     }
   }
-  
   
   if ("75. percentilis" %in% metric) {
     stats_list[["75. percentilis"]] <- "75. percentilis"
@@ -461,10 +447,6 @@ server <- function(input, output, session) {
                            c("Összes egyben", "Lebontás", "Kiválasztott")),
               conditionalPanel(
                 "input.statTraintype == 'Kiválasztott'",
-                # shinyWidgets::pickerInput("statTraintypeSel", "Kiválasztott vonattípus", choicesVonatJelleg, "Személyvonat",
-                #                           multiple = TRUE, options = pickeropts)
-                # selectizeInput("statTraintypeSel", "Kiválasztott vonattípus", NULL,
-                #                multiple = TRUE)
                 shinyWidgets::virtualSelectInput(
                   "statTraintypeSel", "Kiválasztott vonattípus",
                   choices$VonatJelleg, "Személyvonat", multiple = TRUE,
@@ -477,9 +459,6 @@ server <- function(input, output, session) {
                            c("Összes egyben", "Lebontás", "Kiválasztott")),
               conditionalPanel(
                 "input.statStation == 'Kiválasztott'",
-                # shinyWidgets::pickerInput("statStationSel", "Kiválasztott vasútállomás", choicesAllomasErkezo,
-                #                           "Budapest-Keleti", multiple = TRUE, options = pickeropts),
-                # selectizeInput("statStationSel", "Kiválasztott vasútállomás", NULL, multiple = TRUE)
                 shinyWidgets::virtualSelectInput(
                   "statStationSel", "Kiválasztott vasútállomás",
                   choices$AllomasErkezo, "Budapest-Keleti",
@@ -621,11 +600,6 @@ server <- function(input, output, session) {
                 minDate = min(ProcData$Datum),
                 maxDate = max(ProcData$Datum),
                 range = TRUE),
-              # shinyWidgets::pickerInput(
-              #   "databaseVonat", "Vonat", choicesVonatSzam,
-              #   choicesVonatSzam, multiple = TRUE,
-              #   options = pickeropts),
-              # selectizeInput("databaseVonat", "Vonat", NULL, multiple = TRUE),
               shinyWidgets::virtualSelectInput(
                 "databaseVonattipus", "Vonattípus",
                 choices$VonatJelleg, choices$VonatJelleg,
@@ -639,13 +613,6 @@ server <- function(input, output, session) {
                 placeholder = "Válasszon",
                 allOptionsSelectedText = "Mindegyik",
                 searchPlaceholderText = "Keresés"),
-              # shinyWidgets::pickerInput(
-              # "databaseAllomas", "Állomás",
-              # choicesAllomasErkezoIndulo,
-              # choicesAllomasErkezoIndulo,
-              # multiple = TRUE, options = pickeropts),
-              # selectizeInput("databaseAllomas", "Állomás", NULL,
-              #                multiple = TRUE),
               shinyWidgets::virtualSelectInput(
                 "databaseAllomas", "Állomás",
                 choices$AllomasErkezoIndulo,
