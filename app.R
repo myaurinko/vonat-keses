@@ -276,7 +276,7 @@ ui <- navbarPage(
   footer = list(
     hr(),
     p("Írta: ", a("Ferenci Tamás", href = "http://www.medstat.hu/", target = "_blank",
-                  .noWS = "outside"), ", v1.00"),
+                  .noWS = "outside"), ", v1.01"),
     
     tags$script(HTML("
       var sc_project=13147854;
@@ -1000,14 +1000,22 @@ server <- function(input, output, session) {
     
     pd <- pd[Tipus %in% c("Szakasz", "ZaroSzakasz"), kesesstat(KumKeses, input$weekMetric), .(yearweek, day)][order(yearweek, day)]
     
-    p <- hchart(pd, "line", hcaes(x = day, y = value1, group = yearweek)) |>
-      hc_tooltip(valueDecimals = 2, valueSuffix = " perc") |>
+    p <- if(input$weekMetric %in% c(">5", ">20")) {
+      hchart(pd, "line", hcaes(x = day, y = value1 * 100, group = yearweek)) |>
+        hc_yAxis(title = list(text = "Arány [%]")) |>
+        hc_tooltip(valueDecimals = 1, valueSuffix = " %")
+    } else {
+      hchart(pd, "line", hcaes(x = day, y = value1, group = yearweek)) |>
+        hc_yAxis(title = list(text = "Késési idő [perc]")) |>
+        hc_tooltip(valueDecimals = 2, valueSuffix = " perc")
+    }
+    
+    p <- p |>
       hc_title(text = paste0(
         keseshun(input$weekMetric),
         if(input$weekTraintype == "Kiválasztott") paste0(", ", paste0(input$weekTraintypeSel, collapse = ", ")) else "",
         if(input$weekStation == "Kiválasztott") paste0(", ", paste0(input$weekStationSel, collapse = ", ")) else "")) |>
       hc_xAxis(title = list(text = "Hét napja"), allowDecimals = FALSE) |>
-      hc_yAxis(title = list(text = "Késési idő [perc]")) |>
       hc_legend(title = list(text = "Hét")) |>
       hc_add_theme(hc_theme(chart = list(backgroundColor = "white"))) |>
       hc_caption(text = figcap) |>
