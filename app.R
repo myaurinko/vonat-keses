@@ -1,8 +1,5 @@
 library(shiny)
 library(data.table)
-# library(ggplot2)
-# # if(FALSE) library(munsell)
-# theme_set(theme_bw())
 
 library(highcharter)
 hcoptslang <- getOption("highcharter.lang")
@@ -60,7 +57,6 @@ pickeropts <- shinyWidgets::pickerOptions(
 )
 
 ProcData <- readRDS("Proc2Data.rds")
-# map6 <- readRDS("map6.rds")
 allomaskoord <- readRDS("allomaskoord.rds")
 # mapdata <- readRDS("mapdata.rds")
 mapdata <- jsonlite::read_json("hu-all.topo.json")
@@ -869,10 +865,6 @@ server <- function(input, output, session) {
           if(input$trendTraintype == "Lebontás") keseshun(input$trendStatsFreqSingle) else "Késések időbeli trendjei",
           if(input$trendTraintype == "Kiválasztott") paste0(", ", paste0(input$trendTraintypeSel, collapse = ", ")) else "",
           if(input$trendStation == "Kiválasztott") paste0(", ", paste0(input$trendStationSel, collapse = ", ")) else ""))
-      
-      # p <- ggplot(pd,
-      #             aes(x = Datum, y = value1 * 100, group = stat, color = stat)) + geom_line() + geom_point() +
-      #   labs(x = "Dátum", y = "Megoszlás [%]", color = "Statisztika", caption = figcap)
     } else if(input$trendMode == "Idők") {
       p <- if(input$trendTraintype == "Lebontás")
         hchart(pd, "line", hcaes(x = Datum, y = value1, group = VonatJelleg)) else
@@ -888,12 +880,6 @@ server <- function(input, output, session) {
           if(input$trendStation == "Kiválasztott") paste0(", ", paste0(input$trendStationSel, collapse = ", ")) else ""))
       
       if(input$trendLog) p <- p |> hc_yAxis(type = "logarithmic")
-      
-      # p <- ggplot(pd,
-      #             aes(x = Datum, y = value1, group = stat, color = stat)) + geom_line() + geom_point() +
-      #   {if(!input$trendLog) coord_cartesian(ylim = c(0, NA))} +
-      #   labs(x = "Dátum", y = "Késési idő [perc]", color = "Statisztika", caption = figcap)
-      # if(input$trendLog) p <- p + scale_y_log10() + annotation_logticks(sides = "l")
     } else if(input$trendMode == "Összetétel (diszkrét)") {
       p <- hchart(pd, "column",
                   hcaes(x = Datum, y = value1 * 100, group = factor(stat, levels = c("-0", "0-5", "5-10", "10-15", "15-20", "20-30", "30-45", "45-60", "60-")))) |>
@@ -901,17 +887,6 @@ server <- function(input, output, session) {
         hc_tooltip(valueDecimals = 1, valueSuffix = "%") |>
         hc_yAxis(title = list(text = "Megoszlás [%]"), reversedStacks = FALSE, min = 0, max = 100) |>
         hc_legend(title = list(text = "Késési idő [perc]"))
-      
-      # p <- ggplot(pd,
-      #             aes(x = `Dátum`, y = value1*100,
-      #                 fill = factor(stat, levels = rev(c("-0", "0-5", "5-10", "10-15", "15-20", "20-30", "30-45", "45-60", "60-"))))) +
-      #   geom_col() +
-      #   scale_x_date(breaks = "2 days", date_labels = "%b %e") +
-      #   scale_fill_hue(direction = 1, h.start = -90) +
-      #   # dput(scales::seq_gradient_pal("red", "green", "Lab")(seq(0,1,length.out=9)))
-      #   # scale_fill_manual(values = c("#FF0000", "#F45300", "#E87600", "#DA9200", "#C9AB00", "#B3C200", 
-      #   #                              "#98D700", "#70EB00", "#00FF00")) +
-      #   labs(x = "Dátum", y = "Megoszlás [%]", fill = "Késési idő [perc]", caption = figcap)
     }
     
     p |>
@@ -928,7 +903,6 @@ server <- function(input, output, session) {
     
     p <- highchart(type = "map") |>
       hc_add_series(mapData = mapdata, showInLegend = FALSE)
-    # p <- ggplot(map6) + geom_sf()
     
     if(input$spatialMode == "Nyíltvonali késés") {
       pd <- expandlatlon(pd[Tipus %in% c("Szakasz", "ZaroSzakasz"),
@@ -960,15 +934,6 @@ server <- function(input, output, session) {
         hc_tooltip(headerFormat = "<b>{point.Indulo}</b> - <b>{point.Erkezo}</b><br>",
                    pointFormat = "Átlagos késés: {point.Keses:.1f} perc") |>
         hc_plotOptions(mapline = list(lineWidth = 2))
-      
-      # p <- p +
-      #   geom_segment(
-      #     data = expandlatlon(pd[Tipus %in% c("Szakasz", "ZaroSzakasz"),
-      #                            .(Keses = mean(pmax(0, Keses), na.rm = TRUE)),
-      #                            .(Indulo, Erkezo)]),
-      #     aes(x = InduloLong, y = InduloLat,
-      #         xend = ErkezoLong, yend = ErkezoLat,
-      #         color = Keses), linewidth = 1)
     } else if(input$spatialMode == "Indulási késés") {
       pd <- expandlatlon(pd[Tipus == "InduloAllomas",
                             .(Keses = mean(pmax(0, Keses), na.rm = TRUE)),
@@ -984,14 +949,6 @@ server <- function(input, output, session) {
                      stops = colstops) |>
         hc_tooltip(headerFormat = "<b>{point.point.Indulo}</b><br>",
                    pointFormat = "Átlagos késés: {point.Keses:.1f} perc")
-      
-      # p <- p +
-      #   geom_point(
-      #     data = expandlatlon(pd[Tipus == "InduloAllomas",
-      #                            .(Keses = mean(pmax(0, Keses), na.rm = TRUE)),
-      #                            .(Indulo)]),
-      #     aes(x = InduloLong, y = InduloLat,
-      #         color = Keses), size = 3)
     } else if(input$spatialMode == "Teljes késés") {
       pd <- expandlatlon(pd[Tipus %in% c("Szakasz", "ZaroSzakasz"),
                             .(Keses = mean(pmax(0, KumKeses), na.rm = TRUE)),
@@ -1007,14 +964,6 @@ server <- function(input, output, session) {
                      stops = colstops) |>
         hc_tooltip(headerFormat = "<b>{point.point.Erkezo}</b><br>",
                    pointFormat = "Átlagos késés: {point.Keses:.1f} perc")
-      
-      # p <- p  +
-      #   geom_point(
-      #     data = expandlatlon(pd[Tipus %in% c("Szakasz", "ZaroSzakasz"),
-      #                            .(Keses = mean(pmax(0, KumKeses), na.rm = TRUE)),
-      #                            .(Erkezo)]),
-      #     aes(x = ErkezoLong, y = ErkezoLat,
-      #         color = Keses), size = 3)
     } else if(input$spatialMode == "Állomási késés") {
       pd <- expandlatlon(pd[Tipus == "KozbensoAllomas",
                             .(Keses = mean(pmax(0, Keses), na.rm = TRUE)),
@@ -1030,21 +979,7 @@ server <- function(input, output, session) {
                      stops = colstops) |>
         hc_tooltip(headerFormat = "<b>{point.point.Erkezo}</b><br>",
                    pointFormat = "Átlagos késés: {point.Keses:.1f} perc")
-      
-      # p <- p  +
-      #   geom_point(
-      #     data = expandlatlon(pd[Tipus == "KozbensoAllomas",
-      #                            .(Keses = mean(pmax(0, Keses), na.rm = TRUE)),
-      #                            .(Erkezo)]),
-      #     aes(x = ErkezoLong, y = ErkezoLat,
-      #         color = Keses), size = 3)
     }
-    # p <- p + scale_color_gradient(low = "blue", high = "red") +
-    #   labs(x = "", y = "", color = "Átlagos késési\nidő [perc]",
-    #        title = paste0(input$spatialMode, ", ",
-    #                       if(input$spatialTimerange[1] == input$spatialTimerange[2]) input$spatialTimerange[1] else
-    #                         paste0(range(input$spatialTimerange), collapse = " - ")),
-    #        caption = figcap)
     
     p |>
       hc_chart(panning = list(enabled = TRUE)) |>
@@ -1065,25 +1000,17 @@ server <- function(input, output, session) {
     dat <- ProcData[Tipus %in% c("Szakasz", "ZaroSzakasz") & Datum >= input$distrDate[1] &
                       Datum <= input$distrDate[2] & !is.na(KumKeses)]
     if(input$distrLog) dat <- dat[KumKeses > 0]
-    # p <- ggplot(dat)
+
     if(input$distrMode == "Hisztogram") {
       p <- hchart(hist(dat$KumKeses, breaks = 30, plot = FALSE)) |>
         hc_xAxis(title = list(text = "Késési idő [perc]")) |>
         hc_yAxis(title = list(text = "Gyakoriság [darab]"))
       # p <- htmltools::browsable(hw_grid(lapply(unique(dat$Datum), function(d) hchart(hist(dat[Datum == d]$KumKeses, plot = FALSE)))))
-      
-      # p <- p + facet_wrap(~Datum) + geom_histogram(aes(x = KumKeses, y = after_stat(density)), bins = 30) +
-      #   labs(x = "Késési idő [perc]", y = "Megoszlás [%]", caption = figcap) + scale_y_continuous(labels = function(x) x*100)
-      # if(input$distrLog) p <- p + scale_x_log10() + annotation_logticks(sides = "b")
     } else if(input$distrMode == "Magfüggvényes sűrűségbecslés") {
       p <- highchart() |>
         hc_add_series_list(lapply(unique(dat$Datum), function(d)
           list(data = list_parse2(as.data.frame(density(dat[Datum == d]$KumKeses)[1:2])), name = d)))
       if(input$distrLog) p <- p |> hc_xAxis(type = "logarithmic")
-      
-      # p <- p + geom_density(aes(x = KumKeses, group = factor(Datum), color = factor(Datum))) +
-      #   labs(x = "Késési idő [perc]", y = "Eloszlás", caption = figcap)
-      # if(input$distrLog) p <- p + scale_x_log10() + annotation_logticks(sides = "b")
     } else if(input$distrMode == "Boxplot") {
       p <- highchart() |>
         hc_xAxis(type = "category") |>
@@ -1091,10 +1018,6 @@ server <- function(input, output, session) {
         hc_legend(enabled = FALSE) |>
         hc_tooltip(enabled = FALSE)
       if(input$distrLog) p <- p |> hc_yAxis(type = "logarithmic")
-      
-      # p <- p + geom_boxplot(aes(x = Datum, y = KumKeses, group = Datum)) +
-      #   labs( x= "Dátum", y = "Késési idő [perc]", caption = figcap)
-      # if(input$distrLog) p <- p + scale_y_log10() + annotation_logticks(sides = "l")
     }
     p |>
       hc_add_theme(hc_theme(chart = list(backgroundColor = "white"))) |>
