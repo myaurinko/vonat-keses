@@ -279,9 +279,9 @@ ui <- navbarPage(
                   .noWS = "outside"), ", v1.00"),
     
     tags$script(HTML("
-      var sc_project=11601191;
+      var sc_project=13147854;
       var sc_invisible=1;
-      var sc_security=\"5a06c22d\";
+      var sc_security=\"62830747\";
                      "),
                 type = "text/javascript"),
     tags$script(type = "text/javascript",
@@ -290,7 +290,7 @@ ui <- navbarPage(
                       a(title = "ingyen webstatisztika", href = "https://www.statcounter.hu/",
                         target = "_blank",
                         img(class = "statcounter",
-                            src = "https://c.statcounter.com/11601191/0/5a06c22d/1/",
+                            src = "https://c.statcounter.com/13147854/0/62830747/1/",
                             alt = "ingyen webstatisztika",
                             referrerPolicy = "no-referrer-when-downgrade"))))
   ),
