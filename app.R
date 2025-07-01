@@ -85,52 +85,7 @@ kesesstat <- function(x, metric) {
   if (all(is.na(x)) || length(x) == 0) return(NULL) # gyorsabb
   
   x <- x[!is.na(x)]
-  
-  # if("Megoszlás" %in% metric) tab <- table(cut(x, c(-Inf, 0, 5, 10, 15, 20, 30, 45, 60, Inf)))
-  # res <- data.table(
-  #   # type = c("N", rep("Megoszlás", 9), ">5", ">20", "Átlag",
-  #   #          "Medián", "75. percentilis", "90. percentilis",
-  #   #          "99. percentilis"),
-  #   stat = c(if("N" %in% metric) "Megállások száma",
-  #            if("Megoszlás" %in% metric) c("-0", "0-5", "5-10", "10-15", "15-20", "20-30", "30-45", "45-60", "60-"),
-  #            if(">5" %in% metric) ">5",
-  #            if(">20" %in% metric) ">20",
-  #            if("Átlag" %in% metric) "Átlag",
-  #            if("Medián" %in% metric) "Medián",
-  #            if("75. percentilis" %in% metric) "75. percentilis",
-  #            if("90. percentilis" %in% metric) "90. percentilis",
-  #            if("99. percentilis" %in% metric) "99. percentilis"),
-  #   value1 = c(if("N" %in% metric) length(x),
-  #              if("Megoszlás" %in% metric) as.numeric(prop.table(tab)),
-  #              if(">5" %in% metric) mean(x > 5),
-  #              if(">20" %in% metric) mean(x > 20),
-  #              if("Átlag" %in% metric) mean(pmax(0, x)),
-  #              if("Medián" %in% metric) median(pmax(0, x)),
-  #              if("75. percentilis" %in% metric) quantile(x, 0.75),
-  #              if("90. percentilis" %in% metric) quantile(x, 0.9),
-  #              if("99. percentilis" %in% metric) quantile(x, 0.99)),
-  #   # value1 = c(sum(!is.na(x)), as.numeric(prop.table(tab)), mean(x > 5, na.rm = TRUE),
-  #   #            mean(x > 20, na.rm = TRUE), mean(pmax(0, x), na.rm = TRUE),
-  #   #            median(pmax(0, x), na.rm = TRUE),
-  #   #            quantile(x, c(0.75, 0.9, 0.99), na.rm = TRUE)),
-  #   value2 = c(if("N" %in% metric) NA,
-  #              if("Megoszlás" %in% metric) as.numeric(tab),
-  #              if(">5" %in% metric) sum(x > 5),
-  #              if(">20" %in% metric) sum(x > 20),
-  #              if("Átlag" %in% metric) NA,
-  #              if("Medián" %in% metric) NA,
-  #              if("75. percentilis" %in% metric) NA,
-  #              if("90. percentilis" %in% metric) NA,
-  #              if("99. percentilis" %in% metric) NA)
-  # )
-  # # value2 = c(NA, as.numeric(tab), sum(x > 5, na.rm = TRUE), sum(x > 20, na.rm = TRUE),
-  # #            rep(NA, 5)))
-  # res$formatted <- ifelse(res$stat %in% c("-0", "0-5", "5-10", "10-15", "15-20", "20-30", "30-45", "45-60", "60-", ">5", ">20"), paste0(round(res$value1 * 100, 1), "% (", res$value2, ")"),
-  #                         ifelse(res$stat %in% c("Átlag", "Medián", "75. percentilis", "90. percentilis", "99. percentilis"),
-  #                                round(res$value1, 2),
-  #                                ifelse(res$stat == "Megállások száma", res$value1, NA)))
-  # res
-  
+
   stats_list <- list()
   value1_list <- list()
   value2_list <- list()
