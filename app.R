@@ -266,7 +266,7 @@ ui <- navbarPage(
   footer = list(
     hr(),
     p("Írta: ", a("Ferenci Tamás", href = "http://www.medstat.hu/", target = "_blank",
-                  .noWS = "outside"), ", v1.03"),
+                  .noWS = "outside"), ", v1.04"),
     
     tags$script(HTML("
       var sc_project=13147854;
@@ -706,15 +706,15 @@ server <- function(input, output, session) {
     daterange <- range(pd$Datum)
     if(input$statTraintype == "Kiválasztott") pd <- pd[VonatJelleg %in% input$statTraintypeSel]
     if(input$statStation == "Kiválasztott") pd <- pd[Erkezo %in% input$statStationSel]
-    
-    if(nrow(pd) == 0) return(NULL)
-    
+
     byvars <- character()
     if(input$timeTableStratTime == "Naponként") byvars <- c(byvars, c("Dátum" = "Datum"))
     if(input$statTraintype != "Összes egyben") byvars <- c(byvars, c("Vonat jellege" = "VonatJelleg"))
     if(input$statStation != "Összes egyben") byvars <- c(byvars, c("Állomás" = "Erkezo"))
     
     pd <- pd[, kesesstat(KumKeses, c("N", input$statMetric)), byvars]
+    
+    if(nrow(pd) == 0) return(NULL)
     
     if(!"Dátum" %in% colnames(pd)) pd$`Dátum` <- paste0(daterange, collapse = " - ")
     byvars <- union("Dátum", names(byvars))
@@ -748,7 +748,6 @@ server <- function(input, output, session) {
        input$trendTraintype == "Kiválasztott") pd <- pd[VonatJelleg %in% input$trendTraintypeSel]
     if(input$trendMode %in% c("Megoszlások", "Idők") &&
        input$trendStation == "Kiválasztott") pd <- pd[Erkezo %in% input$trendStationSel]
-    if(nrow(pd) == 0) return(NULL)
     
     metricsel <- if(input$trendMode == "Megoszlások") {
       if(input$trendTraintype == "Lebontás") input$trendStatsFreqSingle else input$trendStatsFreq
@@ -761,6 +760,7 @@ server <- function(input, output, session) {
                  input$trendTraintype == "Lebontás") c("Datum", "VonatJelleg") else "Datum"
     
     pd <- pd[Tipus %in% c("Szakasz", "ZaroSzakasz"), kesesstat(KumKeses, metricsel), byvars]
+    if(nrow(pd) == 0) return(NULL)
     
     if(input$trendMode == "Megoszlások") {
       p <- if(input$trendTraintype == "Lebontás")
@@ -982,13 +982,13 @@ server <- function(input, output, session) {
     
     if(input$weekTraintype == "Kiválasztott") pd <- pd[VonatJelleg %in% input$weekTraintypeSel]
     if(input$weekStation == "Kiválasztott") pd <- pd[Erkezo %in% input$weekStationSel]
-    if(nrow(pd) == 0) return(NULL)
     
     pd$day <- lubridate::wday(pd$Datum)
     pd$yearweek <- paste0(lubridate::year(pd$Datum), " - ",
                           lubridate::week(pd$Datum))
     
     pd <- pd[Tipus %in% c("Szakasz", "ZaroSzakasz"), kesesstat(KumKeses, input$weekMetric), .(yearweek, day)][order(yearweek, day)]
+    if(nrow(pd) == 0) return(NULL)
     
     p <- if(input$weekMetric %in% c(">5", ">20")) {
       hchart(pd, "line", hcaes(x = day, y = value1, group = yearweek)) |>
