@@ -112,13 +112,13 @@ kesesstat <- function(x, metric) {
   if ("Átlag" %in% metric) {
     stats_list[["Átlag"]] <- "Átlag"
     value1_list[["Átlag"]] <- mean(x_pmax0)
-    value2_list[["Átlag"]] <- NA
+    value2_list[["Átlag"]] <- NA_real_
   }
   
   if ("Medián" %in% metric) {
     stats_list[["Medián"]] <- "Medián"
     value1_list[["Medián"]] <- median(x_pmax0)
-    value2_list[["Medián"]] <- NA
+    value2_list[["Medián"]] <- NA_real_
   }
   
   quantiles_needed <- c("75. percentilis", "90. percentilis",
@@ -144,24 +144,6 @@ kesesstat <- function(x, metric) {
       value1_list[["99. percentilis"]] <- calculated_quantiles["99. percentilis"]
       value2_list[["99. percentilis"]] <- NA_real_
     }
-  }
-  
-  if ("75. percentilis" %in% metric) {
-    stats_list[["75. percentilis"]] <- "75. percentilis"
-    value1_list[["75. percentilis"]] <- quantile(x, 0.75)
-    value2_list[["75. percentilis"]] <- NA
-  }
-  
-  if ("90. percentilis" %in% metric) {
-    stats_list[["90. percentilis"]] <- "90. percentilis"
-    value1_list[["90. percentilis"]] <- quantile(x, 0.9)
-    value2_list[["90. percentilis"]] <- NA
-  }
-  
-  if ("99. percentilis" %in% metric) {
-    stats_list[["99. percentilis"]] <- "99. percentilis"
-    value1_list[["99. percentilis"]] <- quantile(x, 0.99)
-    value2_list[["99. percentilis"]] <- NA
   }
   
   res <- data.table(
@@ -276,7 +258,7 @@ ui <- navbarPage(
   footer = list(
     hr(),
     p("Írta: ", a("Ferenci Tamás", href = "http://www.medstat.hu/", target = "_blank",
-                  .noWS = "outside"), ", v1.01"),
+                  .noWS = "outside"), ", v1.02"),
     
     tags$script(HTML("
       var sc_project=13147854;
