@@ -86,7 +86,7 @@ kesesstat <- function(x, metric) {
   if ("Megoszlás" %in% metric) {
     tab <- table(cut(x, c(-Inf, 0, 5, 10, 15, 20, 30, 45, 60, Inf)))
     stats_list[["Megoszlás"]] <- c("-0", "0-5", "5-10", "10-15", "15-20", "20-30", "30-45", "45-60", "60-")
-    value1_list[["Megoszlás"]] <- as.numeric(prop.table(tab))
+    value1_list[["Megoszlás"]] <- as.numeric(prop.table(tab)) * 100
     value2_list[["Megoszlás"]] <- as.numeric(tab)
   }
   
@@ -98,14 +98,14 @@ kesesstat <- function(x, metric) {
   if (">5" %in% metric) {
     x_gt_5 <- x > 5
     stats_list[[">5"]] <- ">5"
-    value1_list[[">5"]] <- mean(x_gt_5)
+    value1_list[[">5"]] <- mean(x_gt_5) * 100
     value2_list[[">5"]] <- sum(x_gt_5)
   }
   
   if (">20" %in% metric) {
     x_gt_20 <- x > 20
     stats_list[[">20"]] <- ">20"
-    value1_list[[">20"]] <- mean(x_gt_20)
+    value1_list[[">20"]] <- mean(x_gt_20) * 100
     value2_list[[">20"]] <- sum(x_gt_20)
   }
   
@@ -152,11 +152,15 @@ kesesstat <- function(x, metric) {
     value2 = unlist(value2_list)
   )
   
-  res[, formatted := fifelse(stat %in% c("-0", "0-5", "5-10", "10-15", "15-20", "20-30", "30-45", "45-60", "60-", ">5", ">20"),
-                             paste0(round(value1 * 100, 1), "% (", value2, ")"),
-                             fifelse(stat %in% c("Átlag", "Medián", "75. percentilis", "90. percentilis", "99. percentilis"),
-                                     as.character(round(value1, 2)),
-                                     fifelse(stat == "Megállások száma", as.character(value1), NA_character_)))]
+  res[, formatted := fifelse(
+    stat %in% c("-0", "0-5", "5-10", "10-15", "15-20", "20-30",
+                "30-45", "45-60", "60-", ">5", ">20"),
+    paste0(round(value1, 1), "% (", value2, ")"),
+    fifelse(stat %in% c("Átlag", "Medián", "75. percentilis",
+                        "90. percentilis", "99. percentilis"),
+            as.character(round(value1, 2)),
+            fifelse(stat == "Megállások száma",
+                    as.character(value1), NA_character_)))]
   
   return(res)
 }
@@ -167,17 +171,21 @@ expandlatlon <- function(dat) {
   dat
 }
 
-keseshun <- function(metric) {
-  switch(
+keseshun <- function(metric, short = FALSE, tolowcase = FALSE, hctooltip = FALSE) {
+  res <- switch(
     metric,
-    "Átlag" = "Átlagos késés",
-    "Medián" = "Medián késés",
-    "75. percentilis" = "A késések 75. percentilise",
-    "90. percentilis" = "A késések 90. percentilise",
-    "99. percentilis" = "A késések 99. percentilise",
+    "Átlag" = if(short) "Átlag" else "Átlagos késés",
+    "Medián" = if(short) "Medián" else "Medián késés",
+    "75. percentilis" = if(short) "75. percentilis" else "A késések 75. percentilise",
+    "90. percentilis" = if(short) "90. percentilis" else "A késések 90. percentilise",
+    "99. percentilis" = if(short) "99. percentilis" else "A késések 99. percentilise",
     ">5" = "5 percet meghaladó késések aránya",
     ">20" = "20 percet meghaladó késések aránya"
   )
+  if(hctooltip)
+    res <- if(metric %in% c(">5", ">20")) paste0(res, ": {point.value1:.1f} %") else paste0(res, ": {point.value1:.2f} perc")
+  if(tolowcase) res <- tolower(res)
+  res
 }
 
 ui <- navbarPage(
@@ -258,7 +266,7 @@ ui <- navbarPage(
   footer = list(
     hr(),
     p("Írta: ", a("Ferenci Tamás", href = "http://www.medstat.hu/", target = "_blank",
-                  .noWS = "outside"), ", v1.02"),
+                  .noWS = "outside"), ", v1.03"),
     
     tags$script(HTML("
       var sc_project=13147854;
@@ -512,7 +520,7 @@ server <- function(input, output, session) {
               ),
               conditionalPanel(
                 "input.trendMode == 'Idők' & input.trendTraintype == 'Lebontás'",
-                radioButtons("trendStatsTimeSingle", "Megjelenített statisztikák",
+                radioButtons("trendStatsTimeSingle", "Megjelenített statisztika",
                              c("Átlag", "Medián", "75. percentilis", "90. percentilis", "99. percentilis"))
               ),
               conditionalPanel(
@@ -541,6 +549,8 @@ server <- function(input, output, session) {
                                )),
                            c("Teljes késés", "Indulási késés",
                              "Állomási késés", "Nyíltvonali késés")),
+              radioButtons("spatialMetric", "Megjelenített statisztika",
+                           c(">5", ">20", "Átlag", "Medián", "75. percentilis", "90. percentilis", "99. percentilis")),
               width = 2
             ),
             
@@ -754,8 +764,8 @@ server <- function(input, output, session) {
     
     if(input$trendMode == "Megoszlások") {
       p <- if(input$trendTraintype == "Lebontás")
-        hchart(pd, "line", hcaes(x = Datum, y = value1 * 100, group = VonatJelleg)) else
-          hchart(pd, "line", hcaes(x = Datum, y = value1 * 100, group = stat))
+        hchart(pd, "line", hcaes(x = Datum, y = value1, group = VonatJelleg)) else
+          hchart(pd, "line", hcaes(x = Datum, y = value1, group = stat))
       
       p <- p |>
         hc_tooltip(valueDecimals = 1, valueSuffix = "%") |>
@@ -782,7 +792,7 @@ server <- function(input, output, session) {
       if(input$trendLog) p <- p |> hc_yAxis(type = "logarithmic")
     } else if(input$trendMode == "Összetétel (diszkrét)") {
       p <- hchart(pd, "column",
-                  hcaes(x = Datum, y = value1 * 100, group = factor(stat, levels = c("-0", "0-5", "5-10", "10-15", "15-20", "20-30", "30-45", "45-60", "60-")))) |>
+                  hcaes(x = Datum, y = value1, group = factor(stat, levels = c("-0", "0-5", "5-10", "10-15", "15-20", "20-30", "30-45", "45-60", "60-")))) |>
         hc_plotOptions(series = list(stacking = "normal")) |>
         hc_tooltip(valueDecimals = 1, valueSuffix = "%") |>
         hc_yAxis(title = list(text = "Megoszlás [%]"), reversedStacks = FALSE, min = 0, max = 100) |>
@@ -804,13 +814,55 @@ server <- function(input, output, session) {
     p <- highchart(type = "map") |>
       hc_add_series(mapData = mapdata, showInLegend = FALSE)
     
-    if(input$spatialMode == "Nyíltvonali késés") {
+    if(input$spatialMode == "Teljes késés") {
       pd <- expandlatlon(pd[Tipus %in% c("Szakasz", "ZaroSzakasz"),
-                            .(Keses = mean(pmax(0, Keses), na.rm = TRUE)),
+                            kesesstat(KumKeses, input$spatialMetric),
+                            .(Erkezo)])
+      p <- p |>
+        hc_add_series(data = pd[, .(Erkezo, value1, lat = ErkezoLat,
+                                    lon = ErkezoLong)],
+                      type = "mappoint", colorKey = "value1",
+                      showInLegend = FALSE) |>
+        hc_colorAxis(min = min(pd$value1, na.rm = TRUE),
+                     max = max(pd$value1, na.rm = TRUE),
+                     minColor = "blue", maxColor = "red",
+                     stops = colstops) |>
+        hc_tooltip(headerFormat = "<b>{point.point.Erkezo}</b><br>")
+    } else if(input$spatialMode == "Indulási késés") {
+      pd <- expandlatlon(pd[Tipus == "InduloAllomas",
+                            kesesstat(Keses, input$spatialMetric),
+                            .(Indulo)])
+      p <- p |>
+        hc_add_series(data = pd[, .(Indulo, value1, lat = InduloLat,
+                                    lon = InduloLong)],
+                      type = "mappoint", colorKey = "value1",
+                      showInLegend = FALSE) |>
+        hc_colorAxis(min = min(pd$value1, na.rm = TRUE),
+                     max = max(pd$value1, na.rm = TRUE),
+                     minColor = "blue", maxColor = "red",
+                     stops = colstops) |>
+        hc_tooltip(headerFormat = "<b>{point.point.Indulo}</b><br>")
+    } else if(input$spatialMode == "Állomási késés") {
+      pd <- expandlatlon(pd[Tipus == "KozbensoAllomas",
+                            kesesstat(Keses, input$spatialMetric),
+                            .(Erkezo)])
+      p <- p |>
+        hc_add_series(data = pd[, .(Erkezo, value1, lat = ErkezoLat,
+                                    lon = ErkezoLong)],
+                      type = "mappoint", colorKey = "value1",
+                      showInLegend = FALSE) |>
+        hc_colorAxis(min = min(pd$value1, na.rm = TRUE),
+                     max = max(pd$value1, na.rm = TRUE),
+                     minColor = "blue", maxColor = "red",
+                     stops = colstops) |>
+        hc_tooltip(headerFormat = "<b>{point.point.Erkezo}</b><br>")
+    } else if(input$spatialMode == "Nyíltvonali késés") {
+      pd <- expandlatlon(pd[Tipus %in% c("Szakasz", "ZaroSzakasz"),
+                            kesesstat(Keses, input$spatialMetric),
                             .(Indulo, Erkezo)])
       dat <- lapply(1:nrow(pd), function(i) {
         list(
-          Keses = pd$Keses[i],
+          value1 = pd$value1[i],
           Indulo = pd$Indulo[i],
           Erkezo = pd$Erkezo[i],
           geometry = list(
@@ -825,70 +877,26 @@ server <- function(input, output, session) {
       
       p <- p |>
         hc_add_series(data = dat,
-                      type = "mapline", colorKey = "Keses",
+                      type = "mapline", colorKey = "value1",
                       showInLegend = FALSE) |>
-        hc_colorAxis(min = min(pd$Keses, na.rm = TRUE),
-                     max = max(pd$Keses, na.rm = TRUE),
+        hc_colorAxis(min = min(pd$value1, na.rm = TRUE),
+                     max = max(pd$value1, na.rm = TRUE),
                      minColor = "blue", maxColor = "red",
                      stops = colstops) |>
-        hc_tooltip(headerFormat = "<b>{point.Indulo}</b> - <b>{point.Erkezo}</b><br>",
-                   pointFormat = "Átlagos késés: {point.Keses:.1f} perc") |>
+        hc_tooltip(headerFormat = "<b>{point.Indulo}</b> - <b>{point.Erkezo}</b><br>") |>
         hc_plotOptions(mapline = list(lineWidth = 2))
-    } else if(input$spatialMode == "Indulási késés") {
-      pd <- expandlatlon(pd[Tipus == "InduloAllomas",
-                            .(Keses = mean(pmax(0, Keses), na.rm = TRUE)),
-                            .(Indulo)])
-      p <- p |>
-        hc_add_series(data = pd[, .(Indulo, Keses, lat = InduloLat,
-                                    lon = InduloLong)],
-                      type = "mappoint", colorKey = "Keses",
-                      showInLegend = FALSE) |>
-        hc_colorAxis(min = min(pd$Keses, na.rm = TRUE),
-                     max = max(pd$Keses, na.rm = TRUE),
-                     minColor = "blue", maxColor = "red",
-                     stops = colstops) |>
-        hc_tooltip(headerFormat = "<b>{point.point.Indulo}</b><br>",
-                   pointFormat = "Átlagos késés: {point.Keses:.1f} perc")
-    } else if(input$spatialMode == "Teljes késés") {
-      pd <- expandlatlon(pd[Tipus %in% c("Szakasz", "ZaroSzakasz"),
-                            .(Keses = mean(pmax(0, KumKeses), na.rm = TRUE)),
-                            .(Erkezo)])
-      p <- p |>
-        hc_add_series(data = pd[, .(Erkezo, Keses, lat = ErkezoLat,
-                                    lon = ErkezoLong)],
-                      type = "mappoint", colorKey = "Keses",
-                      showInLegend = FALSE) |>
-        hc_colorAxis(min = min(pd$Keses, na.rm = TRUE),
-                     max = max(pd$Keses, na.rm = TRUE),
-                     minColor = "blue", maxColor = "red",
-                     stops = colstops) |>
-        hc_tooltip(headerFormat = "<b>{point.point.Erkezo}</b><br>",
-                   pointFormat = "Átlagos késés: {point.Keses:.1f} perc")
-    } else if(input$spatialMode == "Állomási késés") {
-      pd <- expandlatlon(pd[Tipus == "KozbensoAllomas",
-                            .(Keses = mean(pmax(0, Keses), na.rm = TRUE)),
-                            .(Erkezo)])
-      p <- p |>
-        hc_add_series(data = pd[, .(Erkezo, Keses, lat = ErkezoLat,
-                                    lon = ErkezoLong)],
-                      type = "mappoint", colorKey = "Keses",
-                      showInLegend = FALSE) |>
-        hc_colorAxis(min = min(pd$Keses, na.rm = TRUE),
-                     max = max(pd$Keses, na.rm = TRUE),
-                     minColor = "blue", maxColor = "red",
-                     stops = colstops) |>
-        hc_tooltip(headerFormat = "<b>{point.point.Erkezo}</b><br>",
-                   pointFormat = "Átlagos késés: {point.Keses:.1f} perc")
     }
     
     p |>
+      hc_tooltip(pointFormat = keseshun(input$spatialMetric,
+                                        hctooltip = TRUE)) |>
       hc_chart(panning = list(enabled = TRUE)) |>
       hc_mapNavigation(
         enabled = TRUE, enableMouseWheelZoom = TRUE,
         enableDoubleClickZoom = TRUE,
         mouseWheelSensitivity = 1.3) |>
       hc_add_theme(hc_theme(chart = list(backgroundColor = "white"))) |>
-      hc_title(text = paste0(input$spatialMode, ", ",
+      hc_title(text = paste0(input$spatialMode, ", ", keseshun(input$spatialMetric, short = TRUE, tolowcase = TRUE), ", ",
                              if(input$spatialTimerange[1] == input$spatialTimerange[2]) input$spatialTimerange[1] else
                                paste0(range(input$spatialTimerange), collapse = " - "))) |>
       hc_caption(text = figcap) |>
@@ -983,7 +991,7 @@ server <- function(input, output, session) {
     pd <- pd[Tipus %in% c("Szakasz", "ZaroSzakasz"), kesesstat(KumKeses, input$weekMetric), .(yearweek, day)][order(yearweek, day)]
     
     p <- if(input$weekMetric %in% c(">5", ">20")) {
-      hchart(pd, "line", hcaes(x = day, y = value1 * 100, group = yearweek)) |>
+      hchart(pd, "line", hcaes(x = day, y = value1, group = yearweek)) |>
         hc_yAxis(title = list(text = "Arány [%]")) |>
         hc_tooltip(valueDecimals = 1, valueSuffix = " %")
     } else {
