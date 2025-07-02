@@ -68,6 +68,7 @@ dt18nurl <- "https://cdn.datatables.net/plug-ins/2.3.2/i18n/hu.json"
 
 kesesstat <- function(x, metric) {
   # if(sum(!is.na(x)) < 3) return(NULL)
+  
   # if(sum(!is.na(x)) == 0) return(NULL)
   if (all(is.na(x)) || length(x) == 0) return(NULL) # gyorsabb
   
@@ -90,8 +91,9 @@ kesesstat <- function(x, metric) {
     value2_list[["Megoszlás"]] <- as.numeric(tab)
   }
   
-  if (any(c("Átlag", "Medián", "75. percentilis",
-            "90. percentilis", "99. percentilis") %in% metric)) {
+  if (any(c(
+    "Átlag", "Medián", "75. percentilis", "90. percentilis",
+    "99. percentilis", "Maximum") %in% metric)) {
     x_pmax0 <- pmax(0, x)
   }
   
@@ -146,6 +148,12 @@ kesesstat <- function(x, metric) {
     }
   }
   
+  if ("Maximum" %in% metric) {
+    stats_list[["Maximum"]] <- "Maximum"
+    value1_list[["Maximum"]] <- max(x_pmax0)
+    value2_list[["Maximum"]] <- NA_real_
+  }
+  
   res <- data.table(
     stat = unlist(stats_list),
     value1 = unlist(value1_list),
@@ -157,7 +165,8 @@ kesesstat <- function(x, metric) {
                 "30-45", "45-60", "60-", ">5", ">20"),
     paste0(round(value1, 1), "% (", value2, ")"),
     fifelse(stat %in% c("Átlag", "Medián", "75. percentilis",
-                        "90. percentilis", "99. percentilis"),
+                        "90. percentilis", "99. percentilis",
+                        "Maximum"),
             as.character(round(value1, 2)),
             fifelse(stat == "Megállások száma",
                     as.character(value1), NA_character_)))]
@@ -179,6 +188,7 @@ keseshun <- function(metric, short = FALSE, tolowcase = FALSE, hctooltip = FALSE
     "75. percentilis" = if(short) "75. percentilis" else "A késések 75. percentilise",
     "90. percentilis" = if(short) "90. percentilis" else "A késések 90. percentilise",
     "99. percentilis" = if(short) "99. percentilis" else "A késések 99. percentilise",
+    "Maximum" = if(short) "Maximum" else "Maximális késés",
     ">5" = "5 percet meghaladó késések aránya",
     ">20" = "20 percet meghaladó késések aránya"
   )
@@ -266,7 +276,7 @@ ui <- navbarPage(
   footer = list(
     hr(),
     p("Írta: ", a("Ferenci Tamás", href = "http://www.medstat.hu/", target = "_blank",
-                  .noWS = "outside"), ", v1.04"),
+                  .noWS = "outside"), ", v1.05"),
     
     tags$script(HTML("
       var sc_project=13147854;
@@ -453,10 +463,12 @@ server <- function(input, output, session) {
                   allOptionsSelectedText = "Mindegyik",
                   searchPlaceholderText = "Keresés")
               ),
-              checkboxGroupInput("statMetric", "Megjelenített statisztikák",
-                                 c("Megoszlás", ">5", ">20", "Átlag", "Medián",
-                                   "75. percentilis", "90. percentilis", "99. percentilis"),
-                                 c("Megoszlás", ">5", ">20", "Átlag")),
+              checkboxGroupInput(
+                "statMetric", "Megjelenített statisztikák",
+                c("Megoszlás", ">5", ">20", "Átlag", "Medián",
+                  "75. percentilis", "90. percentilis",
+                  "99. percentilis", "Maximum"),
+                c("Megoszlás", ">5", ">20", "Átlag")),
               width = 2
             ),
             
@@ -514,14 +526,20 @@ server <- function(input, output, session) {
               ),
               conditionalPanel(
                 "input.trendMode == 'Idők' & input.trendTraintype != 'Lebontás'",
-                checkboxGroupInput("trendStatsTime", "Megjelenített statisztikák",
-                                   c("Átlag", "Medián", "75. percentilis", "90. percentilis", "99. percentilis"),
-                                   "Átlag")
+                checkboxGroupInput(
+                  "trendStatsTime", "Megjelenített statisztikák",
+                  c("Átlag", "Medián", "75. percentilis",
+                    "90. percentilis", "99. percentilis",
+                    "Maximum"),
+                  "Átlag")
               ),
               conditionalPanel(
                 "input.trendMode == 'Idők' & input.trendTraintype == 'Lebontás'",
-                radioButtons("trendStatsTimeSingle", "Megjelenített statisztika",
-                             c("Átlag", "Medián", "75. percentilis", "90. percentilis", "99. percentilis"))
+                radioButtons(
+                  "trendStatsTimeSingle", "Megjelenített statisztika",
+                  c("Átlag", "Medián", "75. percentilis",
+                    "90. percentilis", "99. percentilis",
+                    "Maximum"))
               ),
               conditionalPanel(
                 "input.trendMode == 'Idők'",
@@ -549,8 +567,11 @@ server <- function(input, output, session) {
                                )),
                            c("Teljes késés", "Indulási késés",
                              "Állomási késés", "Nyíltvonali késés")),
-              radioButtons("spatialMetric", "Megjelenített statisztika",
-                           c(">5", ">20", "Átlag", "Medián", "75. percentilis", "90. percentilis", "99. percentilis")),
+              radioButtons(
+                "spatialMetric", "Megjelenített statisztika",
+                c(">5", ">20", "Átlag", "Medián",
+                  "75. percentilis", "90. percentilis",
+                  "99. percentilis", "Maximum")),
               width = 2
             ),
             
@@ -653,7 +674,7 @@ server <- function(input, output, session) {
                 "weekMetric", "Használt mutató",
                 c(">5", ">20", "Átlag",
                   "Medián", "75. percentilis", "90. percentilis",
-                  "99. percentilis")),
+                  "99. percentilis", "Maximum")),
               radioButtons("weekTraintype", "Vonattípus",
                            c("Összes egyben", "Kiválasztott")),
               conditionalPanel(
@@ -706,7 +727,7 @@ server <- function(input, output, session) {
     daterange <- range(pd$Datum)
     if(input$statTraintype == "Kiválasztott") pd <- pd[VonatJelleg %in% input$statTraintypeSel]
     if(input$statStation == "Kiválasztott") pd <- pd[Erkezo %in% input$statStationSel]
-
+    
     byvars <- character()
     if(input$timeTableStratTime == "Naponként") byvars <- c(byvars, c("Dátum" = "Datum"))
     if(input$statTraintype != "Összes egyben") byvars <- c(byvars, c("Vonat jellege" = "VonatJelleg"))
