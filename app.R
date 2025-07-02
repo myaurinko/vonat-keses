@@ -43,13 +43,13 @@ options(highcharter.lang = hcoptslang)
 options(highcharter.download_map_data = FALSE)
 # source("hw_grid.R")
 
-ProcData <- readRDS("Proc2Data.rds")
-allomaskoord <- readRDS("allomaskoord.rds")
+ProcData <- readRDS("./data/ProcData.rds")
+allomaskoord <- readRDS("./data/allomaskoord.rds")
 # mapdata <- readRDS("mapdata.rds")
-mapdata <- jsonlite::read_json("hu-all.topo.json")
+mapdata <- jsonlite::read_json("./data/hu-all.topo.json")
 # mapdata <- download_map_data("countries/hu/hu-all")
-colstops <- readRDS("colstops.rds")
-choices <- readRDS("choices.rds")
+colstops <- readRDS("./data/colstops.rds")
+choices <- readRDS("./data/choices.rds")
 
 desctext <- paste0(
   "A magyar vonatok késési adatait bemutató, vizualizáló, ",
@@ -276,7 +276,7 @@ ui <- navbarPage(
   footer = list(
     hr(),
     p("Írta: ", a("Ferenci Tamás", href = "http://www.medstat.hu/", target = "_blank",
-                  .noWS = "outside"), ", v1.05"),
+                  .noWS = "outside"), ", v1.06"),
     
     tags$script(HTML("
       var sc_project=13147854;
@@ -302,10 +302,10 @@ ui <- navbarPage(
     tags$ul(
       tags$li("A", actionLink("gotoStat", "Táblázatos statisztikák"), " pontban lekérdezhető az összes adat számszerűen.",
               "Lekérdezhetőek a késések különféle statisztikái, egy vagy több napra, összesítve és naponként lebontva is. ",
-              "Az adatok szűrhetőek adott vonattípusra vagy adott állomásra, illetve ezek szerint le is bonthatóak. ",
+              "Az adatok szűrhetőek adott vonatnemre vagy adott állomásra, illetve ezek szerint le is bonthatóak. ",
               "A kapott eredmények sorbarendezhetőek és lementhetőek."),
       tags$li("Az", actionLink("gotoTrend", "Időbeli trendek"), " pontban megtekinthetőek a késések hosszú távú trendjei. ",
-              "Kiválaszthatóak különféle statisztikák, az eredmények szűrhetőek vonattípusra vagy állomásra, az előbbi szerint ",
+              "Kiválaszthatóak különféle statisztikák, az eredmények szűrhetőek vonatnemre vagy állomásra, az előbbi szerint ",
               "le is bonthatóak. Az ábrák interaktívak."),
       tags$li("A", actionLink("gotoSpatial", "Területi összehasonlítás"), " pontban térképek rajzolhatóak a különféle típusú ",
               "késésekből, állomásokra és vonalakra vonatkoztatva is. A térképek színezettek, interaktívak, szabadon nagyíthatóak."),
@@ -389,9 +389,9 @@ ui <- navbarPage(
 
 server <- function(input, output, session) {
   
-  # updateSelectizeInput(session, "statTraintypeSel", choices = choicesVonatJelleg, selected = "Személyvonat", server = TRUE)
+  # updateSelectizeInput(session, "statTraintypeSel", choices = choicesVonatnem, selected = "Személyvonat", server = TRUE)
   # updateSelectizeInput(session, "statStationSel", choices = choicesAllomasErkezo, selected = "Budapest-Keleti", server = TRUE)
-  # updateSelectizeInput(session, "databaseVonat", choices = choicesVonatSzam, selected = choicesVonatSzam, server = TRUE)
+  # updateSelectizeInput(session, "databaseVonat", choices = choicesVonatNev, selected = choicesVonatNev, server = TRUE)
   # updateSelectizeInput(session, "databaseAllomas", choices = choicesAllomasErkezoIndulo, selected = choicesAllomasErkezoIndulo, server = TRUE)
   
   observeEvent(input$gotoStat, updateNavbarPage(session, "main", selected = "stat"))
@@ -439,13 +439,13 @@ server <- function(input, output, session) {
                   maxDate = max(ProcData$Datum))),
               radioButtons("timeTableStratTime", "Megjelenítés módja",
                            c("Naponként", "Egyben")),
-              radioButtons("statTraintype", "Vonattípus",
+              radioButtons("statTraintype", "Vonatnem",
                            c("Összes egyben", "Lebontás", "Kiválasztott")),
               conditionalPanel(
                 "input.statTraintype == 'Kiválasztott'",
                 shinyWidgets::virtualSelectInput(
-                  "statTraintypeSel", "Kiválasztott vonattípus",
-                  choices$VonatJelleg, "Személyvonat", multiple = TRUE,
+                  "statTraintypeSel", "Kiválasztott vonatnem",
+                  choices$Vonatnem, "Személyvonat", multiple = TRUE,
                   search = TRUE,
                   placeholder = "Válasszon",
                   allOptionsSelectedText = "Mindegyik",
@@ -487,13 +487,13 @@ server <- function(input, output, session) {
                              "Összetétel (diszkrét)")),
               conditionalPanel(
                 "input.trendMode == 'Megoszlások' | input.trendMode == 'Idők'",
-                radioButtons("trendTraintype", "Vonattípus",
+                radioButtons("trendTraintype", "Vonatnem",
                              c("Összes egyben", "Lebontás", "Kiválasztott")),
                 conditionalPanel(
                   "input.trendTraintype == 'Kiválasztott'",
                   shinyWidgets::virtualSelectInput(
-                    "trendTraintypeSel", "Kiválasztott vonattípus",
-                    choices$VonatJelleg, "Személyvonat",
+                    "trendTraintypeSel", "Kiválasztott vonatnem",
+                    choices$Vonatnem, "Személyvonat",
                     multiple = TRUE, search = TRUE,
                     placeholder = "Válasszon",
                     allOptionsSelectedText = "Mindegyik",
@@ -610,15 +610,15 @@ server <- function(input, output, session) {
                 maxDate = max(ProcData$Datum),
                 range = TRUE),
               shinyWidgets::virtualSelectInput(
-                "databaseVonattipus", "Vonattípus",
-                choices$VonatJelleg, choices$VonatJelleg,
+                "databaseVonatnem", "Vonatnem",
+                choices$Vonatnem, choices$Vonatnem,
                 multiple = TRUE, search = TRUE,
                 placeholder = "Válasszon",
                 allOptionsSelectedText = "Mindegyik",
                 searchPlaceholderText = "Keresés"),
               shinyWidgets::virtualSelectInput(
-                "databaseVonat", "Vonat", choices$VonatSzam,
-                choices$VonatSzam, multiple = TRUE, search = TRUE,
+                "databaseVonat", "Vonat", choices$VonatNev,
+                choices$VonatNev, multiple = TRUE, search = TRUE,
                 placeholder = "Válasszon",
                 allOptionsSelectedText = "Mindegyik",
                 searchPlaceholderText = "Keresés"),
@@ -675,13 +675,13 @@ server <- function(input, output, session) {
                 c(">5", ">20", "Átlag",
                   "Medián", "75. percentilis", "90. percentilis",
                   "99. percentilis", "Maximum")),
-              radioButtons("weekTraintype", "Vonattípus",
+              radioButtons("weekTraintype", "Vonatnem",
                            c("Összes egyben", "Kiválasztott")),
               conditionalPanel(
                 "input.weekTraintype == 'Kiválasztott'",
                 shinyWidgets::virtualSelectInput(
-                  "weekTraintypeSel", "Kiválasztott vonattípus",
-                  choices$VonatJelleg, "Személyvonat",
+                  "weekTraintypeSel", "Kiválasztott vonatnem",
+                  choices$Vonatnem, "Személyvonat",
                   multiple = TRUE, search = TRUE,
                   placeholder = "Válasszon",
                   allOptionsSelectedText = "Mindegyik",
@@ -725,12 +725,12 @@ server <- function(input, output, session) {
                    if(length(input$timeTableCustomDate) == 1) Datum == input$timeTableCustomDate else
                      Datum >= input$timeTableCustomDate[1] & Datum <= input$timeTableCustomDate[2]])
     daterange <- range(pd$Datum)
-    if(input$statTraintype == "Kiválasztott") pd <- pd[VonatJelleg %in% input$statTraintypeSel]
+    if(input$statTraintype == "Kiválasztott") pd <- pd[Vonatnem %in% input$statTraintypeSel]
     if(input$statStation == "Kiválasztott") pd <- pd[Erkezo %in% input$statStationSel]
     
     byvars <- character()
     if(input$timeTableStratTime == "Naponként") byvars <- c(byvars, c("Dátum" = "Datum"))
-    if(input$statTraintype != "Összes egyben") byvars <- c(byvars, c("Vonat jellege" = "VonatJelleg"))
+    if(input$statTraintype != "Összes egyben") byvars <- c(byvars, c("Vonatnem" = "Vonatnem"))
     if(input$statStation != "Összes egyben") byvars <- c(byvars, c("Állomás" = "Erkezo"))
     
     pd <- pd[, kesesstat(KumKeses, c("N", input$statMetric)), byvars]
@@ -766,7 +766,7 @@ server <- function(input, output, session) {
     pd <- ProcData
     
     if(input$trendMode %in% c("Megoszlások", "Idők") &&
-       input$trendTraintype == "Kiválasztott") pd <- pd[VonatJelleg %in% input$trendTraintypeSel]
+       input$trendTraintype == "Kiválasztott") pd <- pd[Vonatnem %in% input$trendTraintypeSel]
     if(input$trendMode %in% c("Megoszlások", "Idők") &&
        input$trendStation == "Kiválasztott") pd <- pd[Erkezo %in% input$trendStationSel]
     
@@ -778,33 +778,33 @@ server <- function(input, output, session) {
       "Megoszlás"
     }
     byvars <- if(input$trendMode %in% c("Megoszlások", "Idők") &&
-                 input$trendTraintype == "Lebontás") c("Datum", "VonatJelleg") else "Datum"
+                 input$trendTraintype == "Lebontás") c("Datum", "Vonatnem") else "Datum"
     
     pd <- pd[Tipus %in% c("Szakasz", "ZaroSzakasz"), kesesstat(KumKeses, metricsel), byvars]
     if(nrow(pd) == 0) return(NULL)
     
     if(input$trendMode == "Megoszlások") {
       p <- if(input$trendTraintype == "Lebontás")
-        hchart(pd, "line", hcaes(x = Datum, y = value1, group = VonatJelleg)) else
+        hchart(pd, "line", hcaes(x = Datum, y = value1, group = Vonatnem)) else
           hchart(pd, "line", hcaes(x = Datum, y = value1, group = stat))
       
       p <- p |>
         hc_tooltip(valueDecimals = 1, valueSuffix = "%") |>
         hc_yAxis(title = list(text = "Arány [%]")) |>
-        hc_legend(title = list(text = if(input$trendTraintype == "Lebontás") "Vonattípus" else "Késési idő [perc]")) |>
+        hc_legend(title = list(text = if(input$trendTraintype == "Lebontás") "Vonatnem" else "Késési idő [perc]")) |>
         hc_title(text = paste0(
           if(input$trendTraintype == "Lebontás") keseshun(input$trendStatsFreqSingle) else "Késések időbeli trendjei",
           if(input$trendTraintype == "Kiválasztott") paste0(", ", paste0(input$trendTraintypeSel, collapse = ", ")) else "",
           if(input$trendStation == "Kiválasztott") paste0(", ", paste0(input$trendStationSel, collapse = ", ")) else ""))
     } else if(input$trendMode == "Idők") {
       p <- if(input$trendTraintype == "Lebontás")
-        hchart(pd, "line", hcaes(x = Datum, y = value1, group = VonatJelleg)) else
+        hchart(pd, "line", hcaes(x = Datum, y = value1, group = Vonatnem)) else
           hchart(pd, "line", hcaes(x = Datum, y = value1, group = stat))
       
       p <- p |>
         hc_tooltip(valueDecimals = 2, valueSuffix = " perc") |>
         hc_yAxis(title = list(text = "Késési idő [perc]")) |>
-        hc_legend(title = list(text = if(input$trendTraintype == "Lebontás") "Vonattípus" else "Statisztika")) |>
+        hc_legend(title = list(text = if(input$trendTraintype == "Lebontás") "Vonatnem" else "Statisztika")) |>
         hc_title(text = paste0(
           if(input$trendTraintype == "Lebontás") keseshun(input$trendStatsTimeSingle) else "Késések időbeli trendjei",
           if(input$trendTraintype == "Kiválasztott") paste0(", ", paste0(input$trendTraintypeSel, collapse = ", ")) else "",
@@ -960,34 +960,34 @@ server <- function(input, output, session) {
       ProcData[Datum >= input$databaseDate[1] &
                  Datum <= input$databaseDate[2]] else
                    ProcData[Datum == input$databaseDate]
-    pd <- pd[VonatSzam %in% input$databaseVonat]
-    pd <- pd[VonatJelleg %in% input$databaseVonattipus]
+    pd <- pd[VonatNev %in% input$databaseVonat]
+    pd <- pd[Vonatnem %in% input$databaseVonatnem]
     
     if(input$databaseMode == "Nyíltvonali késés") {
       pd <- pd[Indulo %in% input$databaseAllomas |
                  Erkezo %in% input$databaseAllomas]
       pd <- pd[Tipus %in% c("Szakasz", "ZaroSzakasz"),
-               .(`Dátum` = Datum, Vonat = VonatSzam,
-                 `Vonat jellege` = VonatJelleg,
+               .(`Dátum` = Datum, Vonat = VonatNev,
+                 `Vonatnem` = Vonatnem,
                  `Induló állomás` = Indulo,
                  `Érkező állomás` = Erkezo, `Késés` = Keses)]
     } else if(input$databaseMode == "Indulási késés") {
       pd <- pd[Indulo %in% input$databaseAllomas]
       pd <- pd[Tipus == "InduloAllomas",
-               .(`Dátum` = Datum, Vonat = VonatSzam,
-                 `Vonat jellege` = VonatJelleg,
+               .(`Dátum` = Datum, Vonat = VonatNev,
+                 `Vonatnem` = Vonatnem,
                  `Állomás` = Indulo, `Késés` = Keses)]
     } else if(input$databaseMode == "Teljes késés") {
       pd <- pd[Erkezo %in% input$databaseAllomas]
       pd <- pd[Tipus %in% c("Szakasz", "ZaroSzakasz"),
-               .(`Dátum` = Datum, Vonat = VonatSzam,
-                 `Vonat jellege` = VonatJelleg,
+               .(`Dátum` = Datum, Vonat = VonatNev,
+                 `Vonatnem` = Vonatnem,
                  `Állomás` = Erkezo, `Késés` = KumKeses)]
     } else if(input$databaseMode == "Állomási késés") {
       pd <- pd[Erkezo %in% input$databaseAllomas]
       pd <- pd[Tipus == "KozbensoAllomas",
-               .(`Dátum` = Datum, Vonat = VonatSzam,
-                 `Vonat jellege` = VonatJelleg,
+               .(`Dátum` = Datum, Vonat = VonatNev,
+                 `Vonatnem` = Vonatnem,
                  `Állomás` = Erkezo, `Késés` = Keses)]
     }
     DT::datatable(pd, rownames = FALSE, #filter = "top",
@@ -1001,7 +1001,7 @@ server <- function(input, output, session) {
   output$weekOutput <- renderHighchart({
     pd <- ProcData
     
-    if(input$weekTraintype == "Kiválasztott") pd <- pd[VonatJelleg %in% input$weekTraintypeSel]
+    if(input$weekTraintype == "Kiválasztott") pd <- pd[Vonatnem %in% input$weekTraintypeSel]
     if(input$weekStation == "Kiválasztott") pd <- pd[Erkezo %in% input$weekStationSel]
     
     pd$day <- lubridate::wday(pd$Datum)
