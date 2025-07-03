@@ -177,6 +177,7 @@ kesesstat <- function(x, metric) {
 expandlatlon <- function(dat) {
   if("Indulo" %in% colnames(dat)) dat <- merge(dat, allomaskoord[, .(Indulo = Allomas, InduloLat = lat, InduloLong = lon)], by = "Indulo", sort = FALSE)
   if("Erkezo" %in% colnames(dat)) dat <- merge(dat, allomaskoord[, .(Erkezo = Allomas, ErkezoLat = lat, ErkezoLong = lon)], by = "Erkezo", sort = FALSE)
+  if("Allomas" %in% colnames(dat)) dat <- merge(dat, allomaskoord[, .(Allomas, AllomasLat = lat, AllomasLong = lon)], by = "Allomas", sort = FALSE)
   dat
 }
 
@@ -276,7 +277,7 @@ ui <- navbarPage(
   footer = list(
     hr(),
     p("Írta: ", a("Ferenci Tamás", href = "http://www.medstat.hu/", target = "_blank",
-                  .noWS = "outside"), ", v1.06"),
+                  .noWS = "outside"), ", v1.07"),
     
     tags$script(HTML("
       var sc_project=13147854;
@@ -313,7 +314,9 @@ ui <- navbarPage(
               "szűrhető a statisztikák mögött lévő teljes adatbázis, a ", actionLink("gotoDistr", "Napi eloszlások"), " pont,",
               "ahol egy vagy néhány nap eloszlása vizualizálható különböző ábrázolási módszerekkel, és a ",
               actionLink("gotoWeek", "Heti mintázat"), " pont, ahol a különböző késési statisztikák esetleges heti mintázatai ",
-              "vizsgálhatóak.")
+              "vizsgálhatóak. Az ", actionLink("gotoTraffic", "Állomási forgalom"), "pont tartalma nem szigorúan a késésekhez ",
+              "kötődik, de hasznos információkat adhat: megmutatja, hogy adott állomásnak mekkora volt a forgalma; ez ábrázolható ",
+              "időbeli alakulásában, lebontva típus szerint, vagy megjeleníthető adott nap vagy időszak értéke térképen.")
     ),
     h2("Miért született ez az oldal?"),
     p(paste0(
@@ -383,7 +386,10 @@ ui <- navbarPage(
              uiOutput("distrContent")),
     
     tabPanel("Heti mintázat", value = "week",
-             uiOutput("weekContent"))
+             uiOutput("weekContent")),
+    
+    tabPanel("Állomási forgalom", value = "traffic",
+             uiOutput("trafficContent"))
   )
 )
 
@@ -400,6 +406,7 @@ server <- function(input, output, session) {
   observeEvent(input$gotoDatabase, updateNavbarPage(session, "main", selected = "database"))
   observeEvent(input$gotoDistr, updateNavbarPage(session, "main", selected = "distr"))
   observeEvent(input$gotoWeek, updateNavbarPage(session, "main", selected = "week"))
+  observeEvent(input$gotoTraffic, updateNavbarPage(session, "main", selected = "traffic"))
   
   prev_slider_val <- reactiveVal(NULL)
   
@@ -420,8 +427,8 @@ server <- function(input, output, session) {
   observeEvent(input$main, {
     currentTab <- input$main
     
-    if (!currentTab %in% renderedTabs()) {
-      if (currentTab == "stat") {
+    if(!currentTab %in% renderedTabs()) {
+      if(currentTab == "stat") {
         output$statContent <- renderUI({
           sidebarLayout(
             sidebarPanel(
@@ -704,6 +711,46 @@ server <- function(input, output, session) {
             
             mainPanel(
               shinycssloaders::withSpinner(highchartOutput("weekOutput")),
+              width = 10
+            )
+          )
+        })
+      } else if (currentTab == "traffic") {
+        output$trafficContent <- renderUI({
+          sidebarLayout(
+            sidebarPanel(
+              radioButtons("trafficMode", "Megjelenítés módja",
+                           c("Időbeli trend", "Térkép")),
+              conditionalPanel(
+                "input.trafficMode == 'Időbeli trend'",
+                shinyWidgets::virtualSelectInput(
+                  "trafficTrendAllomas", "Állomás",
+                  choices$AllomasErkezoIndulo,
+                  "Budapest-Keleti",
+                  multiple = FALSE, search = TRUE,
+                  placeholder = "Válasszon",
+                  allOptionsSelectedText = "Mindegyik",
+                  searchPlaceholderText = "Keresés")),
+              conditionalPanel(
+                "input.trafficMode == 'Térkép'",
+                radioButtons("trafficMapType", "Vonat típusa",
+                             c("Induló vonat", "Átmenő vonat", "Érkező vonat"))
+              ),
+              width = 2
+            ),
+            mainPanel(
+              shinycssloaders::withSpinner(highchartOutput("trafficOutput")),
+              conditionalPanel(
+                "input.trafficMode == 'Térkép'",
+                sliderInput("trafficMapDate",
+                            div("Vizsgált időpont vagy időszak",
+                                bslib::tooltip(
+                                  bsicons::bs_icon("question-circle"),
+                                  "A csúszka két végét ugyanoda húzva egyetlen nap választható ki.",
+                                  placement = "left"
+                                )),
+                            min(ProcData$Datum), max(ProcData$Datum),
+                            c(max(ProcData$Datum) - 7, max(ProcData$Datum)), timeFormat = "%m. %d.", width = "100%")),
               width = 10
             )
           )
@@ -1032,6 +1079,65 @@ server <- function(input, output, session) {
       hc_caption(text = figcap) |>
       hc_credits(enabled = TRUE) |>
       hc_exporting(enabled = TRUE)
+  })
+  
+  output$trafficOutput <- renderHighchart({
+    if(input$trafficMode == "Időbeli trend") {
+      pd <- rbind(
+        ProcData[Tipus == "InduloAllomas" & Indulo == input$trafficTrendAllomas, .(.N, Tipus = "Induló vonat"), .(Datum, Allomas = Indulo)],
+        ProcData[Tipus == "Szakasz" & Erkezo == input$trafficTrendAllomas, .(.N, Tipus = "Átmenő vonat"), .(Datum, Allomas = Erkezo)],
+        ProcData[Tipus == "ZaroSzakasz" & Erkezo == input$trafficTrendAllomas, .(.N, Tipus = "Érkező vonat"), .(Datum, Allomas = Erkezo)]
+      )
+      pd <- pd[Datum != "2025-06-11"]
+      
+      p <- hchart(pd, "line",
+                  hcaes(x = Datum, y = N, group = Tipus)) |>
+        hc_title(text = paste0(input$trafficTrendAllomas, " állomás forgalma")) |>
+        hc_xAxis(title = list(text = "Dátum")) |>
+        hc_yAxis(title = list(text = "Vonatok száma [db]"), allowDecimals = FALSE) |>
+        hc_tooltip(valueDecimals = 0, valueSuffix = " db") |>
+        hc_add_theme(hc_theme(chart = list(backgroundColor = "white"))) |>
+        hc_caption(text = figcap) |>
+        hc_credits(enabled = TRUE) |>
+        hc_exporting(enabled = TRUE)
+    } else if(input$trafficMode == "Térkép") {
+      pd <- ProcData[Datum >= input$trafficMapDate[1] &
+                       Datum <= input$trafficMapDate[2]]
+      pd <- switch(
+        input$trafficMapType,
+        "Induló vonat" = pd[Tipus == "InduloAllomas", .(.N, Tipus = "Induló vonat"), .(Allomas = Indulo)],
+        "Átmenő vonat" = pd[Tipus == "Szakasz", .(.N, Tipus = "Átmenő vonat"), .(Allomas = Erkezo)],
+        "Érkező vonat" = pd[Tipus == "ZaroSzakasz", .(.N, Tipus = "Érkező vonat"), .(Allomas = Erkezo)]
+      )
+      pd <- expandlatlon(pd)
+      
+      p <- highchart(type = "map") |>
+        hc_add_series(mapData = mapdata, showInLegend = FALSE) |>
+        hc_add_series(data = pd[, .(Allomas, N, lat = AllomasLat,
+                                    lon = AllomasLong)],
+                      type = "mappoint", colorKey = "N",
+                      showInLegend = FALSE) |>
+        hc_colorAxis(min = min(pd$N, na.rm = TRUE),
+                     max = max(pd$N, na.rm = TRUE),
+                     minColor = "blue", maxColor = "red",
+                     stops = colstops) |>
+        hc_tooltip(headerFormat = "<b>{point.point.Allomas}</b><br>",
+                   pointFormat = paste0(input$trafficMapType, "ok száma", ": {point.N:.0f} darab")) |>
+        hc_chart(panning = list(enabled = TRUE)) |>
+        hc_mapNavigation(
+          enabled = TRUE, enableMouseWheelZoom = TRUE,
+          enableDoubleClickZoom = TRUE,
+          mouseWheelSensitivity = 1.3) |>
+        hc_add_theme(hc_theme(chart = list(backgroundColor = "white"))) |>
+        hc_title(text = paste0(input$trafficMapType, "ok száma, ",
+                               if(input$trafficMapDate[1] == input$trafficMapDate[2]) input$trafficMapDate[1] else
+                                 paste0(range(input$trafficMapDate), collapse = " - "))) |>
+        hc_caption(text = figcap) |>
+        hc_credits(enabled = TRUE) |>
+        hc_exporting(enabled = TRUE)
+    }
+    
+    p
   })
 }
 
