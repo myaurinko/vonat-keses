@@ -6,6 +6,7 @@ date: "`r paste0('<br>', Sys.Date())`"
 output:
   github_document:
     toc: false
+    pandoc_args: ["--lua-filter=pandoc-quotes.lua"]
 ---
 
 A weboldal elérhető a következő címen: [https://www.vonat-keses.hu/](https://www.vonat-keses.hu/).

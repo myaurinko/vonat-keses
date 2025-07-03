@@ -1,7 +1,7 @@
 Vonatkésési statisztika
 ================
 Ferenci Tamás (<https://medstat.hu>)
-<br>2025-07-01
+<br>2025-07-03
 
 A weboldal elérhető a következő címen: <https://www.vonat-keses.hu/>.
 
