@@ -115,7 +115,7 @@ ProcData$VonatNev <- gsub("\r\n", "", ProcData$VonatNev)
 
 qgrepl <- function(x) grepl(x, ProcData$VonatNev, ignore.case = TRUE)
 
-ProcData$Vonatnem <- dplyr::case_when(
+ProcData$VonatNem <- dplyr::case_when(
   qgrepl("személyvonat") ~ "Személyvonat",
   qgrepl("InterCity") ~ "InterCity",
   qgrepl("InterRégió") ~ "InterRégió",
@@ -135,31 +135,31 @@ ProcData$Vonatnem <- dplyr::case_when(
   .default = "Egyéb"
 )
 
-# unique(ProcData[VonatSzam < 100]$Vonatnem)
-# unique(ProcData[VonatSzam < 100 & Vonatnem == "Egyéb"]$VonatNev)
-ProcData[VonatSzam < 100][grepl("TRAIANUS", VonatNev)]$Vonatnem <- "InterCity"
+# unique(ProcData[VonatSzam < 100]$VonatNem)
+# unique(ProcData[VonatSzam < 100 & VonatNem == "Egyéb"]$VonatNev)
+ProcData[VonatSzam < 100][grepl("TRAIANUS", VonatNev)]$VonatNem <- "InterCity"
 
-# unique(ProcData[VonatSzam >= 100 & VonatSzam < 500]$Vonatnem)
-# unique(ProcData[VonatSzam >= 100 & VonatSzam < 500 & Vonatnem == "Egyéb"]$VonatNev)
-# unique(ProcData[VonatSzam >= 100 & VonatSzam < 500 & Vonatnem == "Személyvonat"]$VonatNev)
-ProcData[VonatSzam >= 100 & VonatSzam < 500][grepl("CORONA", VonatNev)]$Vonatnem <- "InterCity"
-ProcData[VonatSzam >= 100 & VonatSzam < 500][grepl("METROPOLITAN", VonatNev)]$Vonatnem <- "EuroCity"
-ProcData[VonatSzam >= 100 & VonatSzam < 500][grepl("HERNÁD - ZEMPLÉN", VonatNev)]$Vonatnem <- "InterCity"
-ProcData[VonatSzam >= 100 & VonatSzam < 500][grepl("HERNÁD", VonatNev)]$Vonatnem <- "InterCity"
+# unique(ProcData[VonatSzam >= 100 & VonatSzam < 500]$VonatNem)
+# unique(ProcData[VonatSzam >= 100 & VonatSzam < 500 & VonatNem == "Egyéb"]$VonatNev)
+# unique(ProcData[VonatSzam >= 100 & VonatSzam < 500 & VonatNem == "Személyvonat"]$VonatNev)
+ProcData[VonatSzam >= 100 & VonatSzam < 500][grepl("CORONA", VonatNev)]$VonatNem <- "InterCity"
+ProcData[VonatSzam >= 100 & VonatSzam < 500][grepl("METROPOLITAN", VonatNev)]$VonatNem <- "EuroCity"
+ProcData[VonatSzam >= 100 & VonatSzam < 500][grepl("HERNÁD - ZEMPLÉN", VonatNev)]$VonatNem <- "InterCity"
+ProcData[VonatSzam >= 100 & VonatSzam < 500][grepl("HERNÁD", VonatNev)]$VonatNem <- "InterCity"
 # 358 és társai: úgy tűnik ez tényleg személyvonat, a szám ellenére
 
-# unique(ProcData[VonatSzam >= 500 & VonatSzam < 1000]$Vonatnem)
-# unique(ProcData[VonatSzam >= 500 & VonatSzam < 1000 & Vonatnem == "Egyéb"]$VonatNev)
-# unique(ProcData[VonatSzam >= 500 & VonatSzam < 1000 & Vonatnem == "Személyvonat"]$VonatNev)
-ProcData[VonatSzam >= 500 & VonatSzam < 1000][grepl("BAKONY", VonatNev)]$Vonatnem <- "InterCity"
-ProcData[VonatSzam >= 500 & VonatSzam < 1000][grepl("GÖCSEJ", VonatNev)]$Vonatnem <- "InterCity"
-ProcData[VonatSzam >= 500 & VonatSzam < 1000][grepl("KRESZ GÉZA", VonatNev)]$Vonatnem <- "InterCity"
-ProcData[VonatSzam >= 500 & VonatSzam < 1000][grepl("SOMOGY", VonatNev)]$Vonatnem <- "InterCity"
-ProcData[VonatSzam >= 500 & VonatSzam < 1000][grepl("RIPPL-RÓNAI", VonatNev)]$Vonatnem <- "InterCity"
-ProcData[VonatSzam >= 500 & VonatSzam < 1000][grepl("MECSEK", VonatNev)]$Vonatnem <- "InterCity"
-ProcData[VonatSzam >= 500 & VonatSzam < 1000][grepl("NAPFÉNY", VonatNev)]$Vonatnem <- "InterCity"
-ProcData[VonatSzam >= 500 & VonatSzam < 1000][grepl("ALFÖLD", VonatNev)]$Vonatnem <- "Expresszvonat"
-ProcData[VonatSzam >= 500 & VonatSzam < 1000][grepl("SAVARIA", VonatNev)]$Vonatnem <- "InterCity"
+# unique(ProcData[VonatSzam >= 500 & VonatSzam < 1000]$VonatNem)
+# unique(ProcData[VonatSzam >= 500 & VonatSzam < 1000 & VonatNem == "Egyéb"]$VonatNev)
+# unique(ProcData[VonatSzam >= 500 & VonatSzam < 1000 & VonatNem == "Személyvonat"]$VonatNev)
+ProcData[VonatSzam >= 500 & VonatSzam < 1000][grepl("BAKONY", VonatNev)]$VonatNem <- "InterCity"
+ProcData[VonatSzam >= 500 & VonatSzam < 1000][grepl("GÖCSEJ", VonatNev)]$VonatNem <- "InterCity"
+ProcData[VonatSzam >= 500 & VonatSzam < 1000][grepl("KRESZ GÉZA", VonatNev)]$VonatNem <- "InterCity"
+ProcData[VonatSzam >= 500 & VonatSzam < 1000][grepl("SOMOGY", VonatNev)]$VonatNem <- "InterCity"
+ProcData[VonatSzam >= 500 & VonatSzam < 1000][grepl("RIPPL-RÓNAI", VonatNev)]$VonatNem <- "InterCity"
+ProcData[VonatSzam >= 500 & VonatSzam < 1000][grepl("MECSEK", VonatNev)]$VonatNem <- "InterCity"
+ProcData[VonatSzam >= 500 & VonatSzam < 1000][grepl("NAPFÉNY", VonatNev)]$VonatNem <- "InterCity"
+ProcData[VonatSzam >= 500 & VonatSzam < 1000][grepl("ALFÖLD", VonatNev)]$VonatNem <- "Expresszvonat"
+ProcData[VonatSzam >= 500 & VonatSzam < 1000][grepl("SAVARIA", VonatNev)]$VonatNem <- "InterCity"
 # 969, 968: ?
 # 642: úgy tűnik ez tényleg személyvonat, a szám ellenére
 
@@ -167,13 +167,13 @@ ProcData$VonatNev <- as.factor(ProcData$VonatNev)
 ProcData$Indulo <- as.factor(ProcData$Indulo)
 ProcData$Erkezo <- as.factor(ProcData$Erkezo)
 ProcData$Tipus <- as.factor(ProcData$Tipus)
-ProcData$Vonatnem <- as.factor(ProcData$Vonatnem)
+ProcData$VonatNem <- as.factor(ProcData$VonatNem)
 
-saveRDS(ProcData[, .(Datum, VonatNev, Indulo, Erkezo, Tipus, Keses, KumKeses, Vonatnem)], "./data/ProcData.rds")
+saveRDS(ProcData[, .(Datum, VonatNev, Indulo, Erkezo, Tipus, Keses, KumKeses, VonatNem)], "./data/ProcData.rds")
 
 saveRDS(list(
   VonatNev = sort(unique(ProcData$VonatNev)),
-  Vonatnem = sort(unique(ProcData$Vonatnem)),
+  VonatNem = sort(unique(ProcData$VonatNem)),
   AllomasErkezo = sort(unique(ProcData$Erkezo)),
   AllomasErkezoIndulo =
     sort(unique(c(ProcData$Indulo, ProcData$Erkezo)))),
